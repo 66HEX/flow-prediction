@@ -6,3 +6,4 @@
 export * from './useMouseTracker';
 export * from './useCursorPredictor';
 export * from './usePreloadOnPrediction'; 
+export * from './useRegisterPreloadTarget'; 

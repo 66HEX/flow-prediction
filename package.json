@@ -23,7 +23,14 @@
     "particle-filter",
     "preload"
   ],
-  "author": "",
+  "author": {
+  "name": "Marek Jóźwiak",
+  "email": "hexthecoder@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/66HEX/flow-prediction.git"
+  },
   "license": "MIT",
   "peerDependencies": {
     "react": ">=18.0.0",
