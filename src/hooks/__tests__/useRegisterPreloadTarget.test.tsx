@@ -40,12 +40,18 @@ describe('useRegisterPreloadTarget', () => {
   });
   
   test('registers target on mount and unregisters on unmount', () => {
-    // Component that uses the hook
+    // Create ref to capture
+    let capturedRef: any = null;
+    
+    // Component that uses the hook and captures the ref
     const TestComponent = () => {
       const { ref } = useRegisterPreloadTarget({
         url: '/test-url',
         priority: 5
       });
+      
+      // Update our reference with the received ref callback
+      capturedRef = ref;
       
       return <a ref={ref} href="/test-url" data-testid="test-link">Test Link</a>;
     };
@@ -60,23 +66,21 @@ describe('useRegisterPreloadTarget', () => {
     // Get the link element
     const link = screen.getByTestId('test-link');
     
-    // Manually call the ref function since jsdom doesn't do it automatically
+    // Manually call the ref function
     act(() => {
-      // @ts-ignore - Trigger the ref callback
-      link._reactRefs.forEach((refCallback: any) => {
-        if (typeof refCallback === 'function') {
-          refCallback(link);
-        }
-      });
+      if (capturedRef && typeof capturedRef === 'function') {
+        capturedRef(link);
+      }
     });
     
     // Verify the target was registered
     expect(mockRegisterTarget).toHaveBeenCalledTimes(1);
-    expect(mockRegisterTarget.mock.calls[0][0]).toMatchObject({
-      url: '/test-url',
-      priority: 5,
-      element: link
-    });
+    
+    // Check individual properties separately to avoid circular reference issues
+    const registeredTarget = mockRegisterTarget.mock.calls[0][0];
+    expect(registeredTarget.url).toBe('/test-url');
+    expect(registeredTarget.priority).toBe(5);
+    expect(registeredTarget.element).toBe(link);
     
     // Unmount the component
     unmount();
@@ -159,12 +163,18 @@ describe('useRegisterPreloadTarget', () => {
   });
   
   test('respects autoRegister option', () => {
+    // Create ref to capture
+    let capturedRef: any = null;
+    
     // Component with autoRegister=false
     const TestDisabledComponent = () => {
       const { ref } = useRegisterPreloadTarget({
         url: '/test-url',
         autoRegister: false
       });
+      
+      // Update our reference with the received ref callback
+      capturedRef = ref;
       
       return <a ref={ref} href="/test-url" data-testid="disabled-link">Disabled Link</a>;
     };
@@ -181,12 +191,9 @@ describe('useRegisterPreloadTarget', () => {
     
     // Manually call the ref function
     act(() => {
-      // @ts-ignore - Trigger the ref callback
-      link._reactRefs.forEach((refCallback: any) => {
-        if (typeof refCallback === 'function') {
-          refCallback(link);
-        }
-      });
+      if (capturedRef && typeof capturedRef === 'function') {
+        capturedRef(link);
+      }
     });
     
     // Verify the target was NOT registered due to autoRegister=false
