@@ -241,7 +241,7 @@ const PathIntersectionExample: React.FC = () => {
       <div style={{ marginBottom: '20px' }}>
         <div style={{ marginBottom: '10px' }}>
           <label>
-            Czas predykcji (ms):
+            Prediction horizon (ms):
             <input 
               type="range" 
               min="100" 

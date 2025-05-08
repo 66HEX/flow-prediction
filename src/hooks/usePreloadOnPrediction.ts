@@ -183,52 +183,6 @@ export const usePreloadOnPrediction = (options?: PreloadOptions): PreloadResult 
   const activePreloads = useRef<Map<string, AbortController>>(new Map());
   const checkIntervalRef = useRef<number | null>(null);
   
-  // Check for elements likely to be interacted with
-  const checkPotentialTargets = useCallback(() => {
-    if (!position || !predictedPosition) return;
-    
-    // Find all links in the document
-    const links = Array.from(document.querySelectorAll('a[href]')).filter(
-      link => link.getAttribute('href')?.startsWith('/')  // Only internal links
-    ) as HTMLElement[];
-    
-    // Calculate probability of hitting each element
-    const elementsWithProbabilities = links.map(element => {
-      const { probability, timeToReach } = calculateHitProbability(
-        element,
-        { x: position.x, y: position.y },
-        predictedPosition,
-        horizonTime
-      );
-      
-      return { element, probability, timeToReach };
-    }).filter(item => item.probability >= minProbability);
-    
-    // Sort by probability (highest first) and time (soonest first)
-    elementsWithProbabilities.sort((a, b) => {
-      // First by probability
-      if (b.probability !== a.probability) {
-        return b.probability - a.probability;
-      }
-      // Then by time to reach
-      return a.timeToReach - b.timeToReach;
-    });
-    
-    // Update potential targets
-    setPotentialTargets(elementsWithProbabilities);
-    
-    // Preload high-probability targets
-    const targetsToPreload = elementsWithProbabilities.slice(0, maxConcurrentPreloads);
-    
-    for (const { element, probability, timeToReach } of targetsToPreload) {
-      const url = element.getAttribute('href');
-      if (!url) continue;
-      
-      preloadUrl(url, probability, timeToReach);
-    }
-    
-  }, [position, predictedPosition, horizonTime, minProbability, maxConcurrentPreloads]);
-  
   // Preload a URL
   const preloadUrl = useCallback((url: string, probability: number, timeToReach: number) => {
     // Skip if already in cache or being loaded
@@ -290,6 +244,65 @@ export const usePreloadOnPrediction = (options?: PreloadOptions): PreloadResult 
       });
   }, []);
   
+  // Check for elements likely to be interacted with
+  const checkPotentialTargets = useCallback(() => {
+    if (!position || !predictedPosition) return;
+    
+    // Find all links in the document
+    const links = Array.from(document.querySelectorAll('a[href]')).filter(
+      link => link.getAttribute('href')?.startsWith('/')  // Only internal links
+    ) as HTMLElement[];
+    
+    // Calculate probability of hitting each element
+    const elementsWithProbabilities = links.map(element => {
+      const { probability, timeToReach } = calculateHitProbability(
+        element,
+        { x: position.x, y: position.y },
+        predictedPosition,
+        horizonTime
+      );
+      
+      return { element, probability, timeToReach };
+    }).filter(item => item.probability >= minProbability);
+    
+    // Sort by probability (highest first) and time (soonest first)
+    elementsWithProbabilities.sort((a, b) => {
+      // First by probability
+      if (b.probability !== a.probability) {
+        return b.probability - a.probability;
+      }
+      // Then by time to reach
+      return a.timeToReach - b.timeToReach;
+    });
+    
+    // Update potential targets
+    setPotentialTargets(elementsWithProbabilities);
+    
+    // Preload high-probability targets
+    const targetsToPreload = elementsWithProbabilities.slice(0, maxConcurrentPreloads);
+    
+    for (const { element, probability, timeToReach } of targetsToPreload) {
+      const url = element.getAttribute('href');
+      if (!url) continue;
+      
+      preloadUrl(url, probability, timeToReach);
+    }
+    
+  }, [position, predictedPosition, horizonTime, minProbability, maxConcurrentPreloads, preloadUrl]);
+  
+  // Run checkPotentialTargets whenever position or prediction changes
+  useEffect(() => {
+    if (position && predictedPosition) {
+      // Use a timeout to debounce rapid position changes
+      // and prevent potential infinite loops in tests
+      const timeoutId = setTimeout(() => {
+        checkPotentialTargets();
+      }, 0);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [position, predictedPosition, checkPotentialTargets]);
+  
   // Clean up old cache entries
   const cleanCache = useCallback(() => {
     const now = Date.now();
@@ -333,7 +346,7 @@ export const usePreloadOnPrediction = (options?: PreloadOptions): PreloadResult 
     setPreloadedResources([]);
   }, []);
   
-  // Set up interval for checking potential targets
+  // Set up interval for cleaning the cache only
   useEffect(() => {
     if (isTracking) {
       // Clear previous interval if exists
@@ -341,9 +354,8 @@ export const usePreloadOnPrediction = (options?: PreloadOptions): PreloadResult 
         window.clearInterval(checkIntervalRef.current);
       }
       
-      // Start new interval
+      // Start new interval for cache cleaning only
       checkIntervalRef.current = window.setInterval(() => {
-        checkPotentialTargets();
         cleanCache();
       }, checkFrequency);
       
@@ -354,7 +366,7 @@ export const usePreloadOnPrediction = (options?: PreloadOptions): PreloadResult 
         }
       };
     }
-  }, [isTracking, checkFrequency, checkPotentialTargets, cleanCache]);
+  }, [isTracking, checkFrequency, cleanCache]);
   
   // Clean up on unmount
   useEffect(() => {
