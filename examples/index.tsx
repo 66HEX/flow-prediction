@@ -3,9 +3,12 @@ import { createRoot } from 'react-dom/client';
 import MouseTrackerExample from './MouseTrackerExample';
 import ParticleFilterExample from './ParticleFilterExample';
 import PathIntersectionExample from './PathIntersectionExample';
+import PreloadableLinkExample from './PreloadableLinkExample';
 
 const ExampleSelector: React.FC = () => {
-  const [selectedExample, setSelectedExample] = useState<'mouse-tracker' | 'particle-filter' | 'path-intersection'>('path-intersection');
+  const [selectedExample, setSelectedExample] = useState<
+    'mouse-tracker' | 'particle-filter' | 'path-intersection' | 'preloadable-link'
+  >('path-intersection');
   
   return (
     <div style={{ padding: '20px' }}>
@@ -35,11 +38,21 @@ const ExampleSelector: React.FC = () => {
           <button 
             onClick={() => setSelectedExample('path-intersection')}
             style={{ 
+              marginRight: '10px',
               fontWeight: selectedExample === 'path-intersection' ? 'bold' : 'normal',
               backgroundColor: selectedExample === 'path-intersection' ? '#e0e0e0' : ''
             }}
           >
             Path Intersection Detection
+          </button>
+          <button 
+            onClick={() => setSelectedExample('preloadable-link')}
+            style={{ 
+              fontWeight: selectedExample === 'preloadable-link' ? 'bold' : 'normal',
+              backgroundColor: selectedExample === 'preloadable-link' ? '#e0e0e0' : ''
+            }}
+          >
+            Preloadable Link
           </button>
         </div>
       </div>
@@ -48,6 +61,7 @@ const ExampleSelector: React.FC = () => {
         {selectedExample === 'mouse-tracker' && <MouseTrackerExample />}
         {selectedExample === 'particle-filter' && <ParticleFilterExample />}
         {selectedExample === 'path-intersection' && <PathIntersectionExample />}
+        {selectedExample === 'preloadable-link' && <PreloadableLinkExample />}
       </div>
     </div>
   );

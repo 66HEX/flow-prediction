@@ -246,7 +246,7 @@ const PathIntersectionExample: React.FC = () => {
       </div>
       
       {/* Canvas for visualization */}
-      <div style={{ position: 'relative' }}>
+      <div style={{ position: 'absolute' }}>
         <canvas
           ref={canvasRef}
           width={800}
