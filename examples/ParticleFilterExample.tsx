@@ -25,8 +25,8 @@ const ParticleFilterExample: React.FC = () => {
     history, 
     getParticles,
     isTracking, 
-    startTracking, 
-    stopTracking 
+    startTracking: originalStartTracking, 
+    stopTracking: originalStopTracking
   } = useCursorPredictor({
     predictionHorizon: horizonTime,
     numParticles,
@@ -35,17 +35,72 @@ const ParticleFilterExample: React.FC = () => {
     sampleRate: 16 // ~60fps for smoother visualization
   });
   
+  // Track canvas-relative cursor position
+  const [canvasPosition, setCanvasPosition] = useState<{ x: number, y: number } | null>(null);
+  const [canvasPredictedPosition, setCanvasPredictedPosition] = useState<{ x: number, y: number } | null>(null);
+  
+  // Handle mouse movement on canvas
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !isTracking) return;
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      setCanvasPosition({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      });
+    };
+    
+    // Attach event listener to canvas only
+    canvas.addEventListener('mousemove', handleMouseMove);
+    
+    return () => {
+      canvas.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, [isTracking]);
+  
+  // Update canvas-relative predicted position when global position updates
+  useEffect(() => {
+    if (position && predictedPosition && canvasPosition) {
+      // Calculate offset between global and canvas positions
+      const offsetX = canvasPosition.x - position.x;
+      const offsetY = canvasPosition.y - position.y;
+      
+      // Apply same offset to predicted position
+      setCanvasPredictedPosition({
+        x: predictedPosition.x + offsetX,
+        y: predictedPosition.y + offsetY
+      });
+    } else {
+      setCanvasPredictedPosition(null);
+    }
+  }, [position, predictedPosition, canvasPosition]);
+  
+  // Custom start/stop tracking functions
+  const startTracking = () => {
+    originalStartTracking();
+    setCanvasPosition(null);
+    setCanvasPredictedPosition(null);
+  };
+  
+  const stopTracking = () => {
+    originalStopTracking();
+    setCanvasPosition(null);
+    setCanvasPredictedPosition(null);
+  };
+  
   // Store predictions for visualization
   const [predictions, setPredictions] = useState<PredictionPoint[]>([]);
   
-  // Update predictions
+  // Update predictions using canvas-relative positions
   useEffect(() => {
-    if (position && predictedPosition) {
+    if (canvasPosition && canvasPredictedPosition && position) {
       // Add to predictions history for visualization
       setPredictions(prev => {
         const newPredictions = [...prev, {
-          real: { x: position.x, y: position.y },
-          predicted: { x: predictedPosition.x, y: predictedPosition.y },
+          real: { x: canvasPosition.x, y: canvasPosition.y },
+          predicted: { x: canvasPredictedPosition.x, y: canvasPredictedPosition.y },
           timestamp: position.timestamp
         }];
         
@@ -53,7 +108,7 @@ const ParticleFilterExample: React.FC = () => {
         return newPredictions.slice(-50);
       });
     }
-  }, [position, predictedPosition]);
+  }, [canvasPosition, canvasPredictedPosition, position]);
   
   // Reset predictions when tracking is toggled
   useEffect(() => {
@@ -61,6 +116,25 @@ const ParticleFilterExample: React.FC = () => {
       setPredictions([]);
     }
   }, [isTracking]);
+  
+  // Convert particles to canvas coordinates
+  const getCanvasParticles = () => {
+    if (!position || !canvasPosition) return [];
+    
+    const particles = getParticles();
+    if (!particles) return [];
+    
+    // Calculate offset between global and canvas positions
+    const offsetX = canvasPosition.x - position.x;
+    const offsetY = canvasPosition.y - position.y;
+    
+    // Apply offset to all particles
+    return particles.map(particle => ({
+      x: particle.x + offsetX,
+      y: particle.y + offsetY,
+      weight: particle.weight
+    }));
+  };
   
   // Draw visualization
   useEffect(() => {
@@ -74,19 +148,31 @@ const ParticleFilterExample: React.FC = () => {
     ctx.fillStyle = '#f8f8f8';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
+    // Use canvas-relative positions for drawing
+    const canvasHistory = history.map(point => {
+      if (!position || !canvasPosition) return point;
+      const offsetX = canvasPosition.x - position.x;
+      const offsetY = canvasPosition.y - position.y;
+      return {
+        ...point,
+        x: point.x + offsetX,
+        y: point.y + offsetY
+      };
+    });
+    
     // Draw history points (motion trail)
-    if (history.length > 1) {
+    if (canvasHistory.length > 1) {
       ctx.beginPath();
-      ctx.moveTo(history[0].x, history[0].y);
+      ctx.moveTo(canvasHistory[0].x, canvasHistory[0].y);
       
-      for (let i = 1; i < history.length; i++) {
-        ctx.lineTo(history[i].x, history[i].y);
+      for (let i = 1; i < canvasHistory.length; i++) {
+        ctx.lineTo(canvasHistory[i].x, canvasHistory[i].y);
       }
       
       // Gradient for the trail
       const gradient = ctx.createLinearGradient(
-        history[0].x, history[0].y, 
-        history[history.length - 1].x, history[history.length - 1].y
+        canvasHistory[0].x, canvasHistory[0].y, 
+        canvasHistory[canvasHistory.length - 1].x, canvasHistory[canvasHistory.length - 1].y
       );
       gradient.addColorStop(0, 'rgba(255, 100, 100, 0.2)');
       gradient.addColorStop(1, 'rgba(255, 100, 100, 0.8)');
@@ -97,31 +183,29 @@ const ParticleFilterExample: React.FC = () => {
     }
     
     // Draw particles if enabled
-    if (showParticles && position) {
-      const particles = getParticles();
+    if (showParticles && canvasPosition) {
+      const canvasParticles = getCanvasParticles();
       
-      if (particles) {
-        particles.forEach(particle => {
-          ctx.beginPath();
-          ctx.arc(particle.x, particle.y, 2, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(100, 100, 255, ${particle.weight * 100})`;
-          ctx.fill();
-        });
-      }
+      canvasParticles.forEach(particle => {
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, 2, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(100, 100, 255, ${particle.weight * 100})`;
+        ctx.fill();
+      });
     }
     
     // Draw current position
-    if (position) {
+    if (canvasPosition) {
       ctx.beginPath();
-      ctx.arc(position.x, position.y, 10, 0, Math.PI * 2);
+      ctx.arc(canvasPosition.x, canvasPosition.y, 10, 0, Math.PI * 2);
       ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
       ctx.fill();
     }
     
     // Draw predicted position
-    if (predictedPosition) {
+    if (canvasPredictedPosition) {
       ctx.beginPath();
-      ctx.arc(predictedPosition.x, predictedPosition.y, 10, 0, Math.PI * 2);
+      ctx.arc(canvasPredictedPosition.x, canvasPredictedPosition.y, 10, 0, Math.PI * 2);
       ctx.fillStyle = 'rgba(0, 0, 255, 0.8)';
       ctx.strokeStyle = 'rgba(0, 0, 255, 1)';
       ctx.lineWidth = 2;
@@ -129,10 +213,10 @@ const ParticleFilterExample: React.FC = () => {
       ctx.fill();
       
       // Draw line connecting current to predicted position
-      if (position) {
+      if (canvasPosition) {
         ctx.beginPath();
-        ctx.moveTo(position.x, position.y);
-        ctx.lineTo(predictedPosition.x, predictedPosition.y);
+        ctx.moveTo(canvasPosition.x, canvasPosition.y);
+        ctx.lineTo(canvasPredictedPosition.x, canvasPredictedPosition.y);
         ctx.strokeStyle = 'rgba(100, 100, 255, 0.5)';
         ctx.lineWidth = 1;
         ctx.setLineDash([5, 5]);
@@ -141,9 +225,9 @@ const ParticleFilterExample: React.FC = () => {
       }
     }
     
-  }, [position, predictedPosition, history, showParticles, getParticles]);
+  }, [canvasPosition, canvasPredictedPosition, history, showParticles, position]);
   
-  // Calculate prediction accuracy
+  // Calculate prediction accuracy using canvas coordinates
   const accuracyStats = React.useMemo(() => {
     if (predictions.length < 2) return null;
     
@@ -285,27 +369,25 @@ const ParticleFilterExample: React.FC = () => {
         </div>
       </div>
       
-      <div>
+      <div style={{ minHeight: "180px" }}>
         <h3>Current Position:</h3>
         <p>
-          X: {position?.x.toFixed(1) ?? 'N/A'}, Y: {position?.y.toFixed(1) ?? 'N/A'}
+          X: {canvasPosition?.x.toFixed(1) ?? 'N/A'}, Y: {canvasPosition?.y.toFixed(1) ?? 'N/A'}
         </p>
         
         <h3>Predicted Position ({horizonTime}ms ahead):</h3>
         <p>
-          X: {predictedPosition?.x.toFixed(1) ?? 'N/A'}, 
-          Y: {predictedPosition?.y.toFixed(1) ?? 'N/A'}
+          X: {canvasPredictedPosition?.x.toFixed(1) ?? 'N/A'}, 
+          Y: {canvasPredictedPosition?.y.toFixed(1) ?? 'N/A'}
         </p>
         
-        {accuracyStats && (
-          <div>
-            <h3>Prediction Accuracy:</h3>
-            <p>Average Error: {accuracyStats.averageError.toFixed(2)} pixels</p>
-            <p>Min Error: {accuracyStats.minError.toFixed(2)} pixels</p>
-            <p>Max Error: {accuracyStats.maxError.toFixed(2)} pixels</p>
-            <p>Sample Count: {accuracyStats.sampleCount}</p>
-          </div>
-        )}
+        <div>
+          <h3>Prediction Accuracy:</h3>
+          <p>Average Error: {accuracyStats?.averageError.toFixed(2) ?? 'N/A'} pixels</p>
+          <p>Min Error: {accuracyStats?.minError.toFixed(2) ?? 'N/A'} pixels</p>
+          <p>Max Error: {accuracyStats?.maxError.toFixed(2) ?? 'N/A'} pixels</p>
+          <p>Sample Count: {accuracyStats?.sampleCount ?? 0}</p>
+        </div>
       </div>
       
       <h3>Visualization:</h3>

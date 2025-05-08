@@ -19,6 +19,10 @@ const PathIntersectionExample: React.FC = () => {
   // Canvas for visualization
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
+  // Track canvas-relative cursor position
+  const [canvasPosition, setCanvasPosition] = useState<{ x: number, y: number } | null>(null);
+  const [canvasPredictedPosition, setCanvasPredictedPosition] = useState<{ x: number, y: number } | null>(null);
+  
   // Generating random elements to click
   const [elements, setElements] = useState<Array<{
     id: number;
@@ -43,6 +47,44 @@ const PathIntersectionExample: React.FC = () => {
     sampleRate: 16, // ~60fps for smoother visualization
     checkFrequency: 30, // more frequent checks
   });
+  
+  // Handle mouse movement on canvas
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      setCanvasPosition({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      });
+    };
+    
+    // Attach event listener to canvas only
+    canvas.addEventListener('mousemove', handleMouseMove);
+    
+    return () => {
+      canvas.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
+  
+  // Update canvas-relative predicted position when global position updates
+  useEffect(() => {
+    if (cursorPosition && predictedPosition && canvasPosition) {
+      // Calculate offset between global and canvas positions
+      const offsetX = canvasPosition.x - cursorPosition.x;
+      const offsetY = canvasPosition.y - cursorPosition.y;
+      
+      // Apply same offset to predicted position
+      setCanvasPredictedPosition({
+        x: predictedPosition.x + offsetX,
+        y: predictedPosition.y + offsetY
+      });
+    } else {
+      setCanvasPredictedPosition(null);
+    }
+  }, [cursorPosition, predictedPosition, canvasPosition]);
   
   // Generating random elements when component is mounted
   useEffect(() => {
@@ -114,18 +156,18 @@ const PathIntersectionExample: React.FC = () => {
       }
     });
     
-    // Draw current cursor position
-    if (cursorPosition) {
+    // Draw current cursor position using canvas-relative coordinates
+    if (canvasPosition) {
       ctx.beginPath();
-      ctx.arc(cursorPosition.x, cursorPosition.y, 10, 0, Math.PI * 2);
+      ctx.arc(canvasPosition.x, canvasPosition.y, 10, 0, Math.PI * 2);
       ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
       ctx.fill();
     }
     
-    // Draw predicted cursor position
-    if (predictedPosition) {
+    // Draw predicted cursor position using canvas-relative coordinates
+    if (canvasPredictedPosition) {
       ctx.beginPath();
-      ctx.arc(predictedPosition.x, predictedPosition.y, 10, 0, Math.PI * 2);
+      ctx.arc(canvasPredictedPosition.x, canvasPredictedPosition.y, 10, 0, Math.PI * 2);
       ctx.fillStyle = 'rgba(0, 0, 255, 0.8)';
       ctx.strokeStyle = 'rgba(0, 0, 255, 1)';
       ctx.lineWidth = 2;
@@ -133,10 +175,10 @@ const PathIntersectionExample: React.FC = () => {
       ctx.fill();
       
       // Draw line connecting current and predicted position
-      if (cursorPosition) {
+      if (canvasPosition) {
         ctx.beginPath();
-        ctx.moveTo(cursorPosition.x, cursorPosition.y);
-        ctx.lineTo(predictedPosition.x, predictedPosition.y);
+        ctx.moveTo(canvasPosition.x, canvasPosition.y);
+        ctx.lineTo(canvasPredictedPosition.x, canvasPredictedPosition.y);
         ctx.strokeStyle = 'rgba(100, 100, 255, 0.8)';
         ctx.lineWidth = 2;
         ctx.setLineDash([5, 5]);
@@ -144,7 +186,53 @@ const PathIntersectionExample: React.FC = () => {
         ctx.setLineDash([]);
       }
     }
-  }, [cursorPosition, predictedPosition, elements, potentialTargets]);
+  }, [canvasPosition, canvasPredictedPosition, elements, potentialTargets]);
+  
+  // Render placeholder boxes when no elements are detected
+  const renderBoxes = () => {
+    if (potentialTargets.length > 0) {
+      // Show actual detected elements
+      return potentialTargets.map(target => {
+        const id = target.element.getAttribute('data-id');
+        const element = elements.find(e => e.id.toString() === id);
+        
+        return (
+          <div 
+            key={id} 
+            style={{ 
+              border: '1px solid #ccc', 
+              padding: '10px',
+              borderRadius: '5px',
+              backgroundColor: getProbabilityColor(target.probability),
+              minWidth: '160px'
+            }}
+          >
+            <div><strong>{element?.label || 'Element'}</strong></div>
+            <div>Probability: {Math.round(target.probability * 100)}%</div>
+            <div>Time to reach: {Math.round(target.timeToReach)}ms</div>
+          </div>
+        );
+      });
+    } else {
+      // Show placeholder box with default values
+      return (
+        <div 
+          style={{ 
+            border: '1px solid #ccc', 
+            padding: '10px',
+            borderRadius: '5px',
+            backgroundColor: '#f0f0f0',
+            minWidth: '160px',
+            opacity: 0.7
+          }}
+        >
+          <div><strong>No element detected</strong></div>
+          <div>Probability: N/A</div>
+          <div>Time to reach: N/A</div>
+        </div>
+      );
+    }
+  };
   
   return (
     <div style={{ padding: '20px' }}>
@@ -217,61 +305,83 @@ const PathIntersectionExample: React.FC = () => {
       </div>
       
       {/* Information about detected elements */}
-      <div style={{ marginBottom: '20px' }}>
+      <div style={{ marginBottom: '20px', minHeight: '120px' }}>
         <h2>Detected elements on path ({potentialTargets.length}):</h2>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-          {potentialTargets.length === 0 && <p>No elements on predicted path.</p>}
-          
-          {potentialTargets.map(target => {
-            const id = target.element.getAttribute('data-id');
-            const element = elements.find(e => e.id.toString() === id);
-            
-            return (
-              <div 
-                key={id} 
-                style={{ 
-                  border: '1px solid #ccc', 
-                  padding: '10px',
-                  borderRadius: '5px',
-                  backgroundColor: getProbabilityColor(target.probability)
-                }}
-              >
-                <div><strong>{element?.label || 'Element'}</strong></div>
-                <div>Probability: {Math.round(target.probability * 100)}%</div>
-                <div>Time to reach: {Math.round(target.timeToReach)}ms</div>
-              </div>
-            );
-          })}
+          {renderBoxes()}
         </div>
       </div>
       
-      {/* Canvas for visualization */}
-      <div style={{ position: 'absolute' }}>
+      {/* Current position and predicted position information */}
+      <div style={{ marginBottom: '20px', minHeight: '80px' }}>
+        <div style={{ display: 'flex', gap: '20px' }}>
+          <div>
+            <h3>Current Position:</h3>
+            <p>X: {canvasPosition?.x.toFixed(1) ?? 'N/A'}, Y: {canvasPosition?.y.toFixed(1) ?? 'N/A'}</p>
+          </div>
+          
+          <div>
+            <h3>Predicted Position ({horizonTime}ms ahead):</h3>
+            <p>X: {canvasPredictedPosition?.x.toFixed(1) ?? 'N/A'}, Y: {canvasPredictedPosition?.y.toFixed(1) ?? 'N/A'}</p>
+          </div>
+        </div>
+      </div>
+      
+      {/* Canvas for visualization with fixed positioning */}
+      <div style={{ position: 'relative', width: '800px', height: '500px', marginBottom: '20px' }}>
         <canvas
           ref={canvasRef}
           width={800}
           height={500}
-          style={{ border: '1px solid #ccc', position: 'absolute' }}
+          style={{ 
+            border: '1px solid #ccc', 
+            position: 'absolute',
+            top: 0,
+            left: 0
+          }}
         />
         {/* Invisible DOM elements for detection */}
-      <div style={{ position: 'absolute', pointerEvents: 'none', opacity: 1 }}>
-        {elements.map(element => (
-          <a 
-            key={element.id}
-            href={`/example-link-${element.id}`}
-            data-id={element.id}
-            style={{
-              position: 'absolute',
-              left: `${element.x}px`,
-              top: `${element.y}px`,
-              width: `${element.width}px`,
-              height: `${element.height}px`
-            }}
-          >
-            {element.label}
-          </a>
-        ))}
+        <div style={{ 
+          position: 'absolute', 
+          top: 0, 
+          left: 0, 
+          width: '100%', 
+          height: '100%',
+          pointerEvents: 'none'
+        }}>
+          {elements.map(element => (
+            <a 
+              key={element.id}
+              href={`/example-link-${element.id}`}
+              data-id={element.id}
+              style={{
+                position: 'absolute',
+                left: `${element.x}px`,
+                top: `${element.y}px`,
+                width: `${element.width}px`,
+                height: `${element.height}px`
+              }}
+            >
+              {element.label}
+            </a>
+          ))}
+        </div>
       </div>
+      
+      {/* Legend */}
+      <div style={{ display: 'flex', gap: '20px', fontSize: '14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <div style={{ width: '12px', height: '12px', backgroundColor: 'red', borderRadius: '50%', marginRight: '5px' }} />
+          Current cursor position
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <div style={{ width: '12px', height: '12px', backgroundColor: 'blue', borderRadius: '50%', marginRight: '5px' }} />
+          Predicted position ({horizonTime}ms ahead)
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <div style={{ width: '12px', height: '12px', backgroundColor: 'rgb(128, 128, 0)', borderRadius: '50%', marginRight: '5px' }} />
+          Element (color indicates probability)
+        </div>
       </div>
     </div>
   );
