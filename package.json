@@ -2,6 +2,7 @@
   "name": "flow-cursor-predict",
   "version": "0.1.0",
   "description": "React library for mouse cursor movement prediction and link preloading using Kalman filter",
+  "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
@@ -12,7 +13,8 @@
     "build": "rollup -c",
     "test": "jest",
     "lint": "eslint src/**/*.{ts,tsx}",
-    "dev": "rollup -c -w"
+    "dev": "rollup -c -w",
+    "example": "webpack serve --config examples/webpack.config.js"
   },
   "keywords": [
     "react",
@@ -38,6 +40,7 @@
     "eslint": "^8.45.0",
     "eslint-plugin-react": "^7.33.0",
     "eslint-plugin-react-hooks": "^4.6.0",
+    "html-webpack-plugin": "^5.5.3",
     "jest": "^29.6.0",
     "jest-environment-jsdom": "^29.6.0",
     "react": "^18.2.0",
@@ -46,7 +49,11 @@
     "rollup": "^3.26.0",
     "rollup-plugin-typescript2": "^0.35.0",
     "ts-jest": "^29.1.0",
-    "typescript": "^5.1.6"
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.1.6",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^4.15.1"
   },
   "dependencies": {
     "tslib": "^2.6.0"

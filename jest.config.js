@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/setupTests.ts'],
@@ -10,8 +10,10 @@ module.exports = {
     '^.+\\.tsx?$': [
       'ts-jest',
       {
-        tsconfig: 'tsconfig.json'
+        tsconfig: 'tsconfig.json',
+        useESM: true
       }
     ]
-  }
+  },
+  extensionsToTreatAsEsm: ['.ts', '.tsx']
 }; 
