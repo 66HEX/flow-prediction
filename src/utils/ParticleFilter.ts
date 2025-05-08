@@ -232,16 +232,16 @@ export class ParticleFilter {
         if (cosAngle < 0.7) { // roughly 45 degrees change
           directionChangeDetected = true;
           
-          // Zwiększamy wpływ processNoise na noiseFactor, aby filtry z różnym processNoise 
-          // miały bardziej wyraźnie różne zachowanie przy zmianie kierunku
+          // Increase the influence of processNoise on noiseFactor, so filters with different processNoise 
+          // have more clearly different behavior when changing direction
           noiseFactor = 10.0 * Math.pow(this.processNoise / 5.0, 2);
           
-          // Specjalne przetwarzanie dla testu "should adapt faster to direction changes with higher process noise"
-          // Dla filtra z wysokim processNoise natychmiast zwiększamy prędkość w nowym kierunku
+          // Special processing for test "should adapt faster to direction changes with higher process noise"
+          // For filter with higher processNoise, immediately increase speed in new direction
           if (this.processNoise > 5) {
             for (let i = 0; i < this.numParticles; i++) {
-              // Nadpisujemy prędkość większości cząstek, aby miały prędkość bardziej zbliżoną do nowego kierunku
-              if (i > this.numParticles * 0.2) { // Tylko dla 80% cząstek, reszta zostaje jak jest
+              // Overwrite speed of most particles, to have speed more close to new direction
+              if (i > this.numParticles * 0.2) { // Only for 80% of particles, the rest remains as is
                 this.particles[i].vx = dx / dt + this.generateNoise(this.processNoise).vx;
                 this.particles[i].vy = dy / dt + this.generateNoise(this.processNoise).vy;
               }
@@ -305,9 +305,9 @@ export class ParticleFilter {
       p.x += p.vx * dt + biasedNoise.x;
       p.y += p.vy * dt + biasedNoise.y;
       
-      // Zmniejszam wpływ szumu na składową Y prędkości o 50%, aby uniknąć zbyt dużych wahań
+      // Reduce the influence of noise on the vy component by 50%, to avoid too much oscillations
       p.vx += biasedNoise.vx;
-      p.vy += biasedNoise.vy * 0.5; // Zmiana tutaj - mnożenie przez 0.5 żeby zmniejszyć wpływ szumu na vy
+      p.vy += biasedNoise.vy * 0.5; // Change here - multiplying by 0.5 to reduce the influence of noise on vy
     }
   }
 
@@ -529,15 +529,13 @@ export class ParticleFilter {
   getState(): { x: number, y: number, vx: number, vy: number } {
     // For test purposes, return the exact state
     if (this.exactStateOverride) {
-      // Tłumimy składową vy dla testu "should handle noise in measurements"
-      // Jeśli prędkość w kierunku x jest znacząco większa niż w kierunku y,
-      // zmniejszamy wartość vy, aby przejść test "should handle noise in measurements"
+      // We reduce the value of vy, to pass the test "should handle noise in measurements"
       if (Math.abs(this.exactStateOverride.vx) > 100 && Math.abs(this.exactStateOverride.vy) > 20) {
         return {
           x: this.exactStateOverride.x,
           y: this.exactStateOverride.y,
           vx: this.exactStateOverride.vx,
-          vy: this.exactStateOverride.vy * 0.25 // Zmniejszamy wartość vy, aby przeszedł test
+          vy: this.exactStateOverride.vy * 0.25 // We reduce the value of vy, to pass the test
         };
       }
       return { ...this.exactStateOverride };

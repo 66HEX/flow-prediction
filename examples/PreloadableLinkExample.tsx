@@ -24,7 +24,7 @@ const PreloadableLinkExample: React.FC = () => {
   // Simulated preloading of page
   const simulatePreload = async (url: string): Promise<void> => {
     // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await new Promise(resolve => setTimeout(resolve, 100));
     setPreloadedPage(url);
     return Promise.resolve();
   };
@@ -34,7 +34,7 @@ const PreloadableLinkExample: React.FC = () => {
       predictionHorizon: 300,
       numParticles: 500,
       processNoise: 1,
-      minProbability: 0.8,
+      minProbability: 0.4,
       checkFrequency: 100
     }}>
       <div style={{ padding: '20px' }}>

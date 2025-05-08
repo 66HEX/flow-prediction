@@ -1,5 +1,5 @@
 {
-  "name": "flow-cursor-predict",
+  "name": "flow-prediction",
   "version": "0.1.0",
   "description": "React library for mouse cursor movement prediction and link preloading using Particle Filter",
   "type": "module",

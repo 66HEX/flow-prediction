@@ -1,7 +1,7 @@
 import React, { createContext, useContext, ReactNode, useState, useCallback, useEffect, useRef } from 'react';
 import { usePreloadOnPrediction, PreloadStatus, PreloadOptions } from '../hooks/usePreloadOnPrediction';
 
-// Interfejs for properties of element that can be preloaded
+// Interface for properties of element that can be preloaded
 export interface PreloadTarget {
   id: string;
   url: string;
@@ -10,7 +10,7 @@ export interface PreloadTarget {
   customFetch?: (url: string) => Promise<any>;
 }
 
-// Interfejs for preload context
+// Interface for preload context
 export interface PreloadContextValue {
   registerTarget: (target: PreloadTarget) => void;
   unregisterTarget: (id: string) => void;
@@ -23,7 +23,7 @@ export interface PreloadContextValue {
 // Creating context with default value null
 export const PreloadContext = createContext<PreloadContextValue | null>(null);
 
-// Interfejs for provider properties
+// Interface for provider properties
 export interface PreloadProviderProps {
   children: ReactNode;
   options?: PreloadOptions;
@@ -36,7 +36,6 @@ export const PreloadProvider: React.FC<PreloadProviderProps> = ({ children, opti
   // Using main preload hook
   const {
     preloadedResources,
-    clearCache,
     cursorPosition,
     predictedPosition,
     potentialTargets
@@ -87,6 +86,23 @@ export const PreloadProvider: React.FC<PreloadProviderProps> = ({ children, opti
       console.error(`Error preloading target ${id}:`, error);
     }
   }, []);
+  
+  // Automatically preload targets detected on cursor path
+  useEffect(() => {
+    if (!potentialTargets.length) return;
+    
+    // For each potential target detected by cursor predictor
+    potentialTargets.forEach(potentialTarget => {
+      // Find registered targets that match this element or are near it
+      registeredTargetsRef.current.forEach((registeredTarget, id) => {
+        // Try to preload if the registered target's element is similar to the potential target
+        // We consider them similar if they have the same URL
+        if (registeredTarget.element.getAttribute('href') === potentialTarget.element.getAttribute('href')) {
+          preloadTarget(id);
+        }
+      });
+    });
+  }, [potentialTargets, preloadTarget]);
   
   // Context value containing all necessary functions and data
   const contextValue: PreloadContextValue = {

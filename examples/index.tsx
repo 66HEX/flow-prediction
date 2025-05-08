@@ -4,11 +4,12 @@ import MouseTrackerExample from './MouseTrackerExample';
 import ParticleFilterExample from './ParticleFilterExample';
 import PathIntersectionExample from './PathIntersectionExample';
 import PreloadableLinkExample from './PreloadableLinkExample';
+import PredictionDemoExample from './PredictionDemoExample';
 
 const ExampleSelector: React.FC = () => {
   const [selectedExample, setSelectedExample] = useState<
-    'mouse-tracker' | 'particle-filter' | 'path-intersection' | 'preloadable-link'
-  >('path-intersection');
+    'mouse-tracker' | 'particle-filter' | 'path-intersection' | 'preloadable-link' | 'prediction-demo'
+  >('preloadable-link');
   
   return (
     <div style={{ padding: '20px' }}>
@@ -48,11 +49,21 @@ const ExampleSelector: React.FC = () => {
           <button 
             onClick={() => setSelectedExample('preloadable-link')}
             style={{ 
+              marginRight: '10px',
               fontWeight: selectedExample === 'preloadable-link' ? 'bold' : 'normal',
               backgroundColor: selectedExample === 'preloadable-link' ? '#e0e0e0' : ''
             }}
           >
             Preloadable Link
+          </button>
+          <button 
+            onClick={() => setSelectedExample('prediction-demo')}
+            style={{ 
+              fontWeight: selectedExample === 'prediction-demo' ? 'bold' : 'normal',
+              backgroundColor: selectedExample === 'prediction-demo' ? '#e0e0e0' : ''
+            }}
+          >
+            Prediction Demo
           </button>
         </div>
       </div>
@@ -62,6 +73,7 @@ const ExampleSelector: React.FC = () => {
         {selectedExample === 'particle-filter' && <ParticleFilterExample />}
         {selectedExample === 'path-intersection' && <PathIntersectionExample />}
         {selectedExample === 'preloadable-link' && <PreloadableLinkExample />}
+        {selectedExample === 'prediction-demo' && <PredictionDemoExample />}
       </div>
     </div>
   );
