@@ -1,6 +1,6 @@
 # Flow
 
-React library for predicting cursor movement and preloading links using Kalman filter.
+React library for predicting cursor movement and preloading links using Particle filter.
 
 ## Project Status
 
@@ -11,7 +11,6 @@ This library is currently in active development and not ready for production use
 ## Features (Planned)
 
 - Mouse cursor tracking and movement history
-- Cursor movement prediction using Kalman filter
 - Detection of DOM elements on predicted path
 - Preloading of links based on predicted navigation
 - Configurable parameters for fine-tuning
@@ -35,6 +34,7 @@ function App() {
   usePreloadOnPrediction({
     horizonTime: 500, // predict 500ms into the future
     sampleRate: 50,   // sample cursor position every 50ms
+    numParticles: 100, // number of particles for the filter
     minProbability: 0.6 // preload when probability is above 60%
   });
   
@@ -52,6 +52,30 @@ function App() {
 }
 ```
 
+## Cursor Prediction Visualization
+
+You can visualize the cursor prediction using the included `PredictionDemo` component:
+
+```jsx
+import { PredictionDemo } from 'flow-cursor-predict';
+
+function Demo() {
+  return (
+    <PredictionDemo 
+      width={800} 
+      height={400} 
+      options={{
+        numParticles: 100,
+        predictionHorizon: 500,
+        processNoise: 5,
+        directionBias: 1.5
+      }}
+      showParticles={true}
+    />
+  );
+}
+```
+
 ## Development
 
 ```bash
@@ -63,6 +87,9 @@ npm run build
 
 # Run tests
 npm test
+
+# Run examples
+npm run examples
 ```
 
 ## License

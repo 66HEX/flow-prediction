@@ -2,6 +2,7 @@
  * Hooks for Flow library
  */
 
-// Will re-export hooks as they are implemented
+// Export all hooks
 export * from './useMouseTracker';
-// export * from './usePreloadOnPrediction'; // Will be implemented later 
+export * from './useCursorPredictor';
+export * from './usePreloadOnPrediction'; 

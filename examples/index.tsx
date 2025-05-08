@@ -1,9 +1,48 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import MouseTrackerExample from './MouseTrackerExample';
+import ParticleFilterExample from './ParticleFilterExample';
+
+const ExampleSelector: React.FC = () => {
+  const [selectedExample, setSelectedExample] = useState<'mouse-tracker' | 'particle-filter'>('particle-filter');
+  
+  return (
+    <div style={{ padding: '20px' }}>
+      <div style={{ marginBottom: '20px' }}>
+        <h2>Flow Library Examples</h2>
+        <div>
+          <button 
+            onClick={() => setSelectedExample('mouse-tracker')}
+            style={{ 
+              marginRight: '10px', 
+              fontWeight: selectedExample === 'mouse-tracker' ? 'bold' : 'normal',
+              backgroundColor: selectedExample === 'mouse-tracker' ? '#e0e0e0' : ''
+            }}
+          >
+            Mouse Tracker
+          </button>
+          <button 
+            onClick={() => setSelectedExample('particle-filter')}
+            style={{ 
+              fontWeight: selectedExample === 'particle-filter' ? 'bold' : 'normal',
+              backgroundColor: selectedExample === 'particle-filter' ? '#e0e0e0' : ''
+            }}
+          >
+            Particle Filter Prediction
+          </button>
+        </div>
+      </div>
+      
+      <div>
+        {selectedExample === 'mouse-tracker' && <MouseTrackerExample />}
+        {selectedExample === 'particle-filter' && <ParticleFilterExample />}
+      </div>
+    </div>
+  );
+};
 
 const container = document.getElementById('app');
 if (container) {
   const root = createRoot(container);
-  root.render(<MouseTrackerExample />);
+  root.render(<ExampleSelector />);
 } 

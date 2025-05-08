@@ -2,7 +2,7 @@
 
 ## Przegląd projektu
 
-Ta biblioteka npm dla React będzie wykorzystywać filtr Kalmana do przewidywania ruchu kursora myszy i na tej podstawie preładować zawartość podstron, zanim użytkownik najedzie kursorem na link. Będzie to zoptymalizowane jako hook React z konfigurowalnymi parametrami.
+Ta biblioteka npm dla React będzie wykorzystywać filtr cząsteczkowego do przewidywania ruchu kursora myszy i na tej podstawie preładować zawartość podstron, zanim użytkownik najedzie kursorem na link. Będzie to zoptymalizowane jako hook React z konfigurowalnymi parametrami.
 
 ## 1. Konfiguracja projektu i struktura biblioteki
 
@@ -28,24 +28,21 @@ Zaimplementuj podstawowy hook React useMouseTracker, który będzie śledził po
 - Sprawdź wydajność poprzez monitorowanie użycia CPU przy szybkim ruchu kursora
 - Zweryfikuj, czy historia pozycji jest poprawnie zapisywana i aktualizowana
 
-## 3. Implementacja filtru Kalmana do predykcji ruchu
+## 3. Implementacja filtru cząsteczkowego do predykcji ruchu
 
 ### Prompt dla AI:
 ```
-Zaimplementuj algorytm filtru Kalmana do predykcji ruchu kursora. Stwórz osobny moduł KalmanFilter, który będzie otrzymywał historię ruchu kursora i zwracał przewidywaną przyszłą pozycję. Uwzględnij konfigurację parametrów filtru takich jak szum procesu (process noise) i szum pomiarowy (measurement noise). Zoptymalizuj algorytm pod kątem wydajności w środowisku przeglądarki.
+Zaimplementuj algorytm filtru cząsteczkowego do predykcji ruchu kursora. Stwórz osobny moduł ParticleFilter, który będzie otrzymywał historię ruchu kursora i zwracał przewidywaną przyszłą pozycję. Uwzględnij konfigurację parametrów filtru takich jak szum procesu (process noise), liczbę cząsteczek (number of particles) oraz stronniczości kierunku (direction bias). Zoptymalizuj algorytm pod kątem wydajności w środowisku przeglądarki.
 ```
 
 ### Testowanie:
-- Napisz testy jednostkowe dla algorytmu filtru Kalmana z różnymi zestawami danych wejściowych
+- Napisz testy jednostkowe dla algorytmu filtru cząsteczkowego z różnymi zestawami danych wejściowych
 - Stwórz wizualizację pokazującą rzeczywistą ścieżkę kursora i przewidywaną ścieżkę
 - Zmierz dokładność predykcji dla różnych wzorców ruchu (liniowy, krzywoliniowy, nagłe zmiany kierunku)
 
 ## 4. Rozszerzenie hooka o predykcję ruchu
 
-### Prompt dla AI:
-```
-Rozszerz hook useMouseTracker o funkcjonalność predykcji ruchu na podstawie zaimplementowanego filtru Kalmana. Hook powinien teraz zwracać zarówno aktualną pozycję kursora, jak i przewidywaną przyszłą pozycję wraz z szacowanym czasem dotarcia do tej pozycji. Dodaj parametry konfiguracyjne pozwalające na dostosowanie horyzontu predykcji (jak daleko w przyszłość przewidywać) oraz dokładności filtru Kalmana.
-```
+
 
 ### Testowanie:
 - Zaktualizuj aplikację testową o wyświetlanie przewidywanej pozycji
@@ -84,7 +81,7 @@ Zaimplementuj mechanizm preładowania treści podstron na podstawie przewidywane
 Stwórz finalny hook React usePreloadOnPrediction, który będzie łączył wszystkie zaimplementowane dotychczas funkcjonalności. Hook powinien przyjmować parametry konfiguracyjne takie jak:
 - horizonTime: jak daleko w przyszłość ma przewidywać (w ms)
 - sampleRate: częstotliwość próbkowania pozycji kursora
-- kalmanNoiseParams: parametry szumu dla filtru Kalmana
+- particleFilterParams: parametry dla filtru cząsteczkowego (szum procesu, liczba cząsteczek, stronniczość  kierunku)
 - minProbability: minimalne prawdopodobieństwo najechania wymagane do rozpoczęcia preładowania
 - maxConcurrentPreloads: maksymalna liczba jednoczesnych preładowań
 - cacheSize: rozmiar pamięci podręcznej dla preładowanych treści
@@ -115,7 +112,7 @@ Zaimplementuj kontekst React i hook useRegisterPreloadTarget, który pozwoli kom
 ```
 Dokonaj optymalizacji wydajności biblioteki. Zaimplementuj mechanizmy takie jak:
 - Inteligentne ograniczanie częstotliwości obliczeń (throttling/debouncing)
-- Web Workery do wykonywania obliczeń filtru Kalmana poza głównym wątkiem
+- Web Workery do wykonywania obliczeń filtru cząsteczkowego poza głównym wątkiem
 - Wykorzystanie requestIdleCallback do planowania obliczeń o niższym priorytecie
 - Mechanizm redukcji aktywności podczas braku ruchu kursora
 - Optymalne zarządzanie pamięcią i usuwanie nieużywanych danych z cache'a
@@ -140,7 +137,7 @@ Stwórz szczegółową dokumentację biblioteki zawierającą:
 - Zaawansowane opcje konfiguracji i ich wpływ na działanie biblioteki
 - Sekcję FAQ z rozwiązaniami typowych problemów
 - Wskazówki dotyczące debugowania i rozwiązywania problemów
-- Opis algorytmu i zasady działania filtru Kalmana (dla zainteresowanych)
+- Opis algorytmu i zasady działania filtru cząsteczkowego (dla zainteresowanych)
 
 Przygotuj również przykładowe implementacje dla popularnych frameworków routingu (React Router, Next.js, itd.).
 ```
