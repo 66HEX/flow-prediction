@@ -3,8 +3,8 @@ import { useMouseTracker } from '../src/hooks/useMouseTracker';
 
 const MouseTrackerExample: React.FC = () => {
   const { position, history, isTracking, startTracking, stopTracking } = useMouseTracker({
-    sampleRate: 50, // Próbkowanie co 50ms
-    maxHistoryLength: 10, // Przechowuj ostatnie 10 pozycji
+    sampleRate: 50, // Sample rate 50ms
+    maxHistoryLength: 10, // Store last 10 positions
   });
   
   return (

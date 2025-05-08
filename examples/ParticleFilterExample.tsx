@@ -104,7 +104,7 @@ const ParticleFilterExample: React.FC = () => {
         particles.forEach(particle => {
           ctx.beginPath();
           ctx.arc(particle.x, particle.y, 2, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(100, 100, 255, ${particle.weight * 2})`;
+          ctx.fillStyle = `rgba(100, 100, 255, ${particle.weight * 100})`;
           ctx.fill();
         });
       }

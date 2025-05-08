@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import MouseTrackerExample from './MouseTrackerExample';
 import ParticleFilterExample from './ParticleFilterExample';
+import PathIntersectionExample from './PathIntersectionExample';
 
 const ExampleSelector: React.FC = () => {
-  const [selectedExample, setSelectedExample] = useState<'mouse-tracker' | 'particle-filter'>('particle-filter');
+  const [selectedExample, setSelectedExample] = useState<'mouse-tracker' | 'particle-filter' | 'path-intersection'>('path-intersection');
   
   return (
     <div style={{ padding: '20px' }}>
@@ -24,11 +25,21 @@ const ExampleSelector: React.FC = () => {
           <button 
             onClick={() => setSelectedExample('particle-filter')}
             style={{ 
+              marginRight: '10px',
               fontWeight: selectedExample === 'particle-filter' ? 'bold' : 'normal',
               backgroundColor: selectedExample === 'particle-filter' ? '#e0e0e0' : ''
             }}
           >
             Particle Filter Prediction
+          </button>
+          <button 
+            onClick={() => setSelectedExample('path-intersection')}
+            style={{ 
+              fontWeight: selectedExample === 'path-intersection' ? 'bold' : 'normal',
+              backgroundColor: selectedExample === 'path-intersection' ? '#e0e0e0' : ''
+            }}
+          >
+            Path Intersection Detection
           </button>
         </div>
       </div>
@@ -36,6 +47,7 @@ const ExampleSelector: React.FC = () => {
       <div>
         {selectedExample === 'mouse-tracker' && <MouseTrackerExample />}
         {selectedExample === 'particle-filter' && <ParticleFilterExample />}
+        {selectedExample === 'path-intersection' && <PathIntersectionExample />}
       </div>
     </div>
   );
