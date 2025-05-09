@@ -91,12 +91,13 @@ export const PreloadProvider: React.FC<PreloadProviderProps> = ({ children, opti
   useEffect(() => {
     if (!potentialTargets.length) return;
     
+    // Save a copy of the current targets
+    const currentTargets = new Map(registeredTargetsRef.current);
+    
     // For each potential target detected by cursor predictor
     potentialTargets.forEach(potentialTarget => {
-      // Find registered targets that match this element or are near it
-      registeredTargetsRef.current.forEach((registeredTarget, id) => {
-        // Try to preload if the registered target's element is similar to the potential target
-        // We consider them similar if they have the same URL
+      // Compare registered targets
+      currentTargets.forEach((registeredTarget, id) => {
         if (registeredTarget.element.getAttribute('href') === potentialTarget.element.getAttribute('href')) {
           preloadTarget(id);
         }

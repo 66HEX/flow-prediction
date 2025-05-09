@@ -33,7 +33,7 @@ export const useRegisterPreloadTarget = (options: RegisterPreloadTargetOptions) 
   } = usePreloadContext();
   
   // State for DOM element reference
-  const [elementRef, setElementRef] = useState<HTMLElement | null>(null);
+  const elementRef = useRef<HTMLElement | null>(null);
   
   // Unique ID for this registration
   const idRef = useRef<string>(`preload-target-${Math.random().toString(36).substring(2, 9)}`);
@@ -50,31 +50,29 @@ export const useRegisterPreloadTarget = (options: RegisterPreloadTargetOptions) 
   
   // Ref callback to assign DOM element
   const ref = (element: HTMLElement | null) => {
-    if (element !== elementRef) {
-      setElementRef(element);
-    }
+    elementRef.current = element;
   };
   
   // Effect to register/unregister target in context
   useEffect(() => {
-    if (elementRef && autoRegister) {
-      // Register target in context
-      const target: PreloadTarget = {
-        id: idRef.current,
-        url,
-        element: elementRef,
-        priority,
-        customFetch
-      };
-      
-      registerTarget(target);
-      
-      // Unregister when component unmounts
-      return () => {
-        unregisterTarget(idRef.current);
-      };
-    }
-  }, [elementRef, url, priority, customFetch, registerTarget, unregisterTarget, autoRegister]);
+    if (!elementRef.current || !autoRegister) return;
+    
+    // Register target in context
+    const target: PreloadTarget = {
+      id: idRef.current,
+      url,
+      element: elementRef.current,
+      priority,
+      customFetch
+    };
+    
+    registerTarget(target);
+    
+    // Unregister when component unmounts
+    return () => {
+      unregisterTarget(idRef.current);
+    };
+  }, [url, priority, customFetch, registerTarget, unregisterTarget, autoRegister]);
   
   return {
     ref,
