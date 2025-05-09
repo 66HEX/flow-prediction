@@ -9,7 +9,7 @@ export default {
   output: [
     {
       file: pkg.main,
-      format: 'cjs',
+      format: 'esm',
       exports: 'named',
       sourcemap: true,
     },
@@ -20,14 +20,17 @@ export default {
       sourcemap: true,
     },
   ],
-  external: [...Object.keys(pkg.peerDependencies || {})],
+  external: [
+    ...Object.keys(pkg.peerDependencies || {}),
+    ...Object.keys(pkg.dependencies || {})
+  ],
   plugins: [
     typescript({
       typescript: require('typescript'),
       useTsconfigDeclarationDir: true,
       tsconfigOverride: {
-        exclude: ['**/*.test.ts', '**/*.test.tsx', 'node_modules']
+        exclude: ['**/*.test.ts', '**/*.test.tsx', 'node_modules', 'examples/**/*']
       }
     }),
   ],
-}; 
+};
