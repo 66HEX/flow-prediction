@@ -29,8 +29,13 @@ export default {
       typescript: require('typescript'),
       useTsconfigDeclarationDir: true,
       tsconfigOverride: {
+        compilerOptions: {
+          declaration: true,
+          declarationDir: 'dist'
+        },
         exclude: ['**/*.test.ts', '**/*.test.tsx', 'node_modules', 'examples/**/*']
-      }
+      },
+      clean: true
     }),
   ],
 };
