@@ -44,13 +44,14 @@ nav_order: 7
 
 Enable debug mode for detailed logging:
 
-```tsx
+{% raw %}```tsx
 <PreloadProvider 
   options={{ 
-    debug: true  // Enable debug logging
+    debug: true
   }}
 >
-```
+```{% endraw %}
+
 
 ## Browser Compatibility
 

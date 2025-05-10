@@ -32,7 +32,8 @@ nav_order: 5
 
 ## Reducing CPU Impact
 
-- Disable tracking when unnecessary:
+Disable tracking when unnecessary:
+
 ```tsx
 const { startTracking, stopTracking } = useCursorPredictor();
 
