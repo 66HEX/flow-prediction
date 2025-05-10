@@ -88,6 +88,7 @@ const {
   startTracking,      // Function to start tracking
   stopTracking,       // Function to stop tracking
   getParticles,       // Get raw particles for visualization
+  getNoiseParameters, // Get current noise parameters
   reset               // Reset predictor state
 } = useCursorPredictor({
   sampleRate: 50,             // Sample rate (ms)
@@ -96,7 +97,11 @@ const {
   numParticles: 100,          // Number of particles
   processNoise: 5,            // Process noise
   measurementNoise: 2,        // Measurement noise
-  directionBias: 1.5          // Direction bias
+  directionBias: 1.5,         // Direction bias
+  useAdaptiveNoise: true,     // Enable adaptive noise parameters
+  maxHistorySize: 10,         // History size for adaptive noise
+  minProcessNoise: 1,         // Minimum process noise value
+  maxProcessNoise: 15         // Maximum process noise value
 });
 ```
 
@@ -178,9 +183,15 @@ Visualization component for debugging and demonstration.
     numParticles: 100,
     predictionHorizon: 500,
     processNoise: 5,
-    directionBias: 1.5
+    directionBias: 1.5,
+    useAdaptiveNoise: true,
+    maxHistorySize: 10,
+    minProcessNoise: 1,
+    maxProcessNoise: 15
   }}
   showParticles={true}
+  showTrail={true}
+  showNoiseParams={true}
 />
 ```
 
@@ -217,7 +228,11 @@ const filter = new ParticleFilter({
     x: 0, y: 0, vx: 0, vy: 0
   },
   resampleThreshold: 0.5,   // Resample threshold
-  directionBias: 1.5        // Direction bias
+  directionBias: 1.5,       // Direction bias
+  useAdaptiveNoise: true,   // Enable adaptive noise parameters
+  maxHistorySize: 10,       // Number of measurements to keep for adaptive noise
+  minProcessNoise: 1,       // Minimum process noise value
+  maxProcessNoise: 15       // Maximum process noise value
 });
 
 // Update with new measurement
@@ -228,6 +243,9 @@ const prediction = filter.predict(500); // 500ms ahead
 
 // Get current state estimate
 const state = filter.getState();
+
+// Get current noise parameters
+const noiseParams = filter.getNoiseParameters();
 
 // Get particles for visualization
 const particles = filter.getParticles();

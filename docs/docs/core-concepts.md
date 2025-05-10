@@ -21,6 +21,16 @@ nav_order: 2
 
 The library uses a particle filter algorithm to track and predict cursor movement. This statistical method maintains multiple "particles" that represent possible future cursor positions, updating their weights based on observed movements and resampling to focus on the most likely paths.
 
+### Adaptive Noise
+
+The particle filter includes an adaptive noise system that automatically adjusts the filter's parameters based on cursor movement patterns:
+
+- During rapid or erratic movements, process noise increases to better adapt to unpredictable changes
+- During smooth, consistent movements, process noise decreases for more stable predictions
+- The measurement noise adapts based on statistical properties of recent observations
+
+This adaptive behavior ensures optimal prediction performance across different usage scenarios without manual parameter tuning.
+
 ## Cursor Prediction
 
 Based on the historical cursor movement data, the library predicts where the cursor will be in the near future (configurable prediction horizon). Unlike simple linear extrapolation, the particle filter can handle non-linear movements and sudden changes in direction.

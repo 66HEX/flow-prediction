@@ -31,7 +31,11 @@ const filter = new ParticleFilter({
     x: 0, y: 0, vx: 0, vy: 0
   },
   resampleThreshold: 0.5,   // Resample threshold
-  directionBias: 1.5        // Direction bias
+  directionBias: 1.5,       // Direction bias
+  useAdaptiveNoise: true,   // Enable adaptive noise parameters
+  maxHistorySize: 10,       // Number of measurements to keep for adaptive noise
+  minProcessNoise: 1,       // Minimum process noise value
+  maxProcessNoise: 15       // Maximum process noise value
 });
 
 // Update with new measurement
@@ -43,10 +47,40 @@ const prediction = filter.predict(500); // 500ms ahead
 // Get current state estimate
 const state = filter.getState();
 
+// Get current noise parameters
+const noiseParams = filter.getNoiseParameters();
+
 // Get particles for visualization
 const particles = filter.getParticles();
 ```
 
+### API Reference
+
+#### Constructor Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `numParticles` | `number` | `100` | Number of particles to use |
+| `processNoise` | `number` | `5` | Process noise (model uncertainty) |
+| `measurementNoise` | `number` | `2` | Measurement noise (sensor uncertainty) |
+| `initialState` | `object` | `{x:0,y:0,vx:0,vy:0}` | Initial position and velocity |
+| `resampleThreshold` | `number` | `0.5` | Percentage of effective particles required before resampling |
+| `directionBias` | `number` | `1.5` | How strongly to bias toward current movement direction |
+| `useAdaptiveNoise` | `boolean` | `false` | Whether to use adaptive noise parameters |
+| `maxHistorySize` | `number` | `10` | Maximum measurements to keep for adaptive noise calculation |
+| `minProcessNoise` | `number` | `1` | Minimum process noise value |
+| `maxProcessNoise` | `number` | `15` | Maximum process noise value |
+
+#### Methods
+
+| Method | Parameters | Return | Description |
+|--------|------------|--------|-------------|
+| `update` | `{x, y, timestamp?}` | `void` | Update with new measurement |
+| `predict` | `timeAhead: number` | `{x, y}` | Predict position after timeAhead ms |
+| `getState` | - | `{x, y, vx, vy}` | Get current state estimate |
+| `getParticles` | - | `Array<{x, y, weight}>` | Get particles for visualization |
+| `getNoiseParameters` | - | `{processNoise, measurementNoise}` | Get current noise parameters |
+| `reset` | `state?: {x, y, vx?, vy?}` | `void` | Reset filter to given state or defaults |
 
 ## Quadtree
 

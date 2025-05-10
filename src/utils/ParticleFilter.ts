@@ -411,43 +411,6 @@ export class ParticleFilter {
    * Update weights based on new measurement
    */
   private updateWeights(measurement: { x: number, y: number }): void {
-    // For test purposes, keep first particle having high weight
-    if (this.exactStateOverride) {
-      // Update the exact state particle to have higher weight
-      this.particles[0].x = this.exactStateOverride.x;
-      this.particles[0].y = this.exactStateOverride.y;
-      this.particles[0].weight = 0.5;
-      
-      // Set the remaining weights
-      let totalWeight = this.particles[0].weight;
-      
-      // Calculate new weights for other particles
-      for (let i = 1; i < this.numParticles; i++) {
-        const likelihood = this.calculateLikelihood(this.particles[i], measurement);
-        this.particles[i].weight *= likelihood;
-        totalWeight += this.particles[i].weight;
-      }
-      
-      // Normalize weights
-      if (totalWeight > 0) {
-        const remainingWeight = 1.0 - this.particles[0].weight;
-        const scale = remainingWeight / (totalWeight - this.particles[0].weight);
-        
-        for (let i = 1; i < this.numParticles; i++) {
-          this.particles[i].weight *= scale;
-        }
-      } else {
-        // If all weights are zero (unlikely), reset to uniform
-        const remainingWeight = 1.0 - this.particles[0].weight;
-        const weight = remainingWeight / (this.numParticles - 1);
-        
-        for (let i = 1; i < this.numParticles; i++) {
-          this.particles[i].weight = weight;
-        }
-      }
-      
-      return;
-    }
     
     // Normal weight update
     let totalWeight = 0;
@@ -488,39 +451,6 @@ export class ParticleFilter {
    * Resample particles based on their weights (systematic resampling)
    */
   private resampleParticles(): void {
-    // For test purposes, preserve the first exact particle
-    if (this.exactStateOverride) {
-      const exactParticle = { ...this.particles[0] };
-      const newParticles: Particle[] = [exactParticle];
-      
-      // Systematic resampling for the rest
-      const step = 1.0 / (this.numParticles - 1);
-      let offset = Math.random() * step;
-      let cumulative = this.particles[1].weight;
-      let i = 1;
-      
-      for (let j = 1; j < this.numParticles; j++) {
-        const target = offset + (j - 1) * step;
-        
-        while (target > cumulative && i < this.numParticles - 1) {
-          i++;
-          cumulative += this.particles[i].weight;
-        }
-        
-        // Clone the selected particle
-        newParticles.push({
-          x: this.particles[i].x,
-          y: this.particles[i].y,
-          vx: this.particles[i].vx,
-          vy: this.particles[i].vy,
-          weight: 1.0 / (this.numParticles - 1)
-        });
-      }
-      
-      this.particles = newParticles;
-      return;
-    }
-    
     // Normal resampling
     const newParticles: Particle[] = [];
     
@@ -557,15 +487,6 @@ export class ParticleFilter {
    * @returns Predicted position {x, y}
    */
   predict(timeAhead: number = 0): { x: number, y: number } {
-    // For test purposes, directly calculate from exact state
-    if (this.exactStateOverride) {
-      const dt = timeAhead / 1000;
-      return { 
-        x: this.exactStateOverride.x + this.exactStateOverride.vx * dt,
-        y: this.exactStateOverride.y + this.exactStateOverride.vy * dt
-      };
-    }
-    
     // Normal prediction
     // If no prediction time is specified, return the current estimate
     if (timeAhead <= 0) {

@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Performance Optimization
-nav_order: 5
+nav_order: 6
 ---
 
 # Performance Optimization
@@ -23,6 +23,26 @@ nav_order: 5
 - **processNoise**: Higher values allow quicker adaptation to direction changes
 - **sampleRate**: Balance between responsiveness and performance
 - **checkFrequency**: How often to check for element intersections
+
+## Adaptive Noise Parameters
+
+When using adaptive noise, consider these performance-related settings:
+
+- **useAdaptiveNoise**: Set to `false` for maximum performance in constrained environments
+- **maxHistorySize**: Lower values (5-10) reduce memory and computation overhead
+- **minProcessNoise** and **maxProcessNoise**: Setting a narrower range reduces adaptation calculations
+
+Example optimization for performance-sensitive applications:
+
+```tsx
+const { predictedPosition } = useCursorPredictor({
+  // Optimize for performance
+  useAdaptiveNoise: true,
+  maxHistorySize: 5,       // Reduced history size
+  minProcessNoise: 2,      // Higher minimum for better stability
+  maxProcessNoise: 10      // Lower maximum to reduce processing
+});
+```
 
 ## Memory Management
 
@@ -54,13 +74,17 @@ On mobile devices, consider:
 1. Disabling prediction entirely
 2. Reducing `numParticles` significantly 
 3. Increasing `processNoise` to make predictions more responsive to touch movements
+4. Using adaptive noise with a smaller history size and narrower bounds
 
 {% raw %}```tsx
 const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
 
 <PreloadProvider options={{
   numParticles: isMobile ? 20 : 100,
-  processNoise: isMobile ? 10 : 5,
+  useAdaptiveNoise: true,
+  maxHistorySize: isMobile ? 5 : 10,
+  minProcessNoise: isMobile ? 3 : 1,
+  maxProcessNoise: isMobile ? 8 : 15,
   sampleRate: isMobile ? 100 : 50
 }}>
 ```{% endraw %}

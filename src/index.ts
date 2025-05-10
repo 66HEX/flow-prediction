@@ -7,18 +7,17 @@
 export * from './hooks';
 
 // Re-export components
-export * from './components/PreloadableLink';
-export * from './components/PredictionDemo';
+export * from './components';
 
 // Re-export context
-export * from './context/PreloadContext';
+export * from './context';
 
 // Export utility types and classes
 export { ParticleFilter } from './utils/ParticleFilter';
 export type { ParticleFilterOptions } from './utils/ParticleFilter';
 export { Quadtree } from './utils/Quadtree';
 
-// Export specific types from hooks for better developer experience
+// Export hooks types
 export type {
   MouseTrackerOptions,
   MousePosition,
@@ -50,3 +49,10 @@ export type {
   PredictionDemoProps,
   PredictionDemoOptions,
 } from './components/PredictionDemo'; 
+
+// Export context types
+export type {
+  PreloadContextValue,
+  PreloadProviderProps,
+  PreloadTarget,
+} from './context';
