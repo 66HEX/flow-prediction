@@ -5,14 +5,14 @@ nav_order: 1
 description: "Flow - React library for predicting cursor movement and preloading links using Particle filter."
 ---
 
-# Flow: React Cursor Prediction Library
+# Flow: Smart Link Preloading for React
 {: .fs-9 }
 
 React library for predicting cursor movement and preloading links using Particle filter.
 {: .fs-6 .fw-300 }
 
 [Get started](#quick-start){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }
-[View it on GitHub](https://github.com/66HEX/flow-prediction){: .btn .fs-5 .mb-4 .mb-md-0 }
+[View it on GitHub](https://github.com/66HEX/flow-prediction){: .btn .btn-outline .fs-5 .mb-4 .mb-md-0 }
 
 ---
 

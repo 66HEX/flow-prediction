@@ -1,4 +1,4 @@
-# Flow: React Cursor Prediction Library
+# Flow: Smart Link Preloading for React
 
 React library for predicting cursor movement and preloading links using Particle filter.
 
