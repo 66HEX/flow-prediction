@@ -16,6 +16,7 @@ export * from './context/PreloadContext';
 // Export utility types and classes
 export { ParticleFilter } from './utils/ParticleFilter';
 export type { ParticleFilterOptions } from './utils/ParticleFilter';
+export { Quadtree } from './utils/Quadtree';
 
 // Export specific types from hooks for better developer experience
 export type {

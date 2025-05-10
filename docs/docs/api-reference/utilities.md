@@ -46,3 +46,35 @@ const state = filter.getState();
 // Get particles for visualization
 const particles = filter.getParticles();
 ```
+
+
+## `Quadtree`
+
+Spatial indexing data structure for efficient element intersection detection.
+
+```tsx
+// Create a quadtree for viewport bounds
+const quadtree = new Quadtree({
+  x: 0,
+  y: 0,
+  width: window.innerWidth,
+  height: window.innerHeight
+}, 
+  4,    // Capacity (max items per node)
+  5     // Maximum depth
+);
+
+// Insert DOM elements
+document.querySelectorAll('a[href]').forEach(element => {
+  quadtree.insert(element);
+});
+
+// Find elements that might intersect with a line
+const elementsOnPath = quadtree.queryLine(
+  { x: 100, y: 100 },    // Start point
+  { x: 300, y: 200 }     // End point (prediction)
+);
+
+// Clear the quadtree when needed
+quadtree.clear();
+```

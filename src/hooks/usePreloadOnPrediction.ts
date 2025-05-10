@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useCursorPredictor, CursorPredictorOptions } from './useCursorPredictor';
+import { Quadtree } from '../utils/Quadtree';
 
 /**
  * Options for the usePreloadOnPrediction hook
@@ -183,6 +184,92 @@ export const usePreloadOnPrediction = (options?: PreloadOptions): PreloadResult 
   const activePreloads = useRef<Map<string, AbortController>>(new Map());
   const checkIntervalRef = useRef<number | null>(null);
   
+  // Add refs for throttling and spatial indexing
+  const lastExecutionTimeRef = useRef<number>(0);
+  const quadtreeRef = useRef<Quadtree | null>(null);
+  const observerRef = useRef<MutationObserver | null>(null);
+  
+  // Function to build the quadtree with all links in the DOM
+  const buildQuadtree = useCallback(() => {
+    // Create quadtree with viewport dimensions
+    const viewportBounds = {
+      x: 0,
+      y: 0,
+      width: window.innerWidth,
+      height: window.innerHeight
+    };
+    
+    const quadtree = new Quadtree(viewportBounds);
+    
+    // Find all links and add to quadtree
+    const links = Array.from(document.querySelectorAll('a[href]')).filter(
+      link => link.getAttribute('href')?.startsWith('/')
+    ) as HTMLElement[];
+    
+    for (const link of links) {
+      quadtree.insert(link);
+    }
+    
+    return quadtree;
+  }, []);
+  
+  // Initialize quadtree and observer when tracking starts
+  useEffect(() => {
+    if (isTracking) {
+      // Build initial quadtree
+      quadtreeRef.current = buildQuadtree();
+      
+      // Set up mutation observer to rebuild quadtree when DOM changes
+      const observer = new MutationObserver((mutations) => {
+        let needsRebuild = false;
+        
+        for (const mutation of mutations) {
+          if (
+            mutation.type === 'childList' || 
+            (mutation.type === 'attributes' && mutation.attributeName === 'href')
+          ) {
+            needsRebuild = true;
+            break;
+          }
+        }
+        
+        if (needsRebuild) {
+          quadtreeRef.current = buildQuadtree();
+        }
+      });
+      
+      // Observe the document for changes to links
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['href']
+      });
+      
+      observerRef.current = observer;
+      
+      return () => {
+        observer.disconnect();
+        quadtreeRef.current = null;
+      };
+    }
+  }, [isTracking, buildQuadtree]);
+  
+  // Handle window resize to rebuild the quadtree
+  useEffect(() => {
+    const handleResize = () => {
+      if (isTracking) {
+        quadtreeRef.current = buildQuadtree();
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [isTracking, buildQuadtree]);
+  
   // Preload a URL
   const preloadUrl = useCallback((url: string, probability: number, timeToReach: number) => {
     // Skip if already in cache or being loaded
@@ -244,17 +331,18 @@ export const usePreloadOnPrediction = (options?: PreloadOptions): PreloadResult 
       });
   }, []);
   
-  // Check for elements likely to be interacted with
+  // Check for elements likely to be interacted with (optimized version)
   const checkPotentialTargets = useCallback(() => {
-    if (!position || !predictedPosition) return;
+    if (!position || !predictedPosition || !quadtreeRef.current) return;
     
-    // Find all links in the document
-    const links = Array.from(document.querySelectorAll('a[href]')).filter(
-      link => link.getAttribute('href')?.startsWith('/')  // Only internal links
-    ) as HTMLElement[];
+    // Use quadtree to efficiently find potential elements on the cursor path
+    const potentialElements = quadtreeRef.current.queryLine(
+      { x: position.x, y: position.y },
+      predictedPosition
+    );
     
     // Calculate probability of hitting each element
-    const elementsWithProbabilities = links.map(element => {
+    const elementsWithProbabilities = potentialElements.map(element => {
       const { probability, timeToReach } = calculateHitProbability(
         element,
         { x: position.x, y: position.y },
@@ -290,18 +378,19 @@ export const usePreloadOnPrediction = (options?: PreloadOptions): PreloadResult 
     
   }, [position, predictedPosition, horizonTime, minProbability, maxConcurrentPreloads, preloadUrl]);
   
-  // Run checkPotentialTargets whenever position or prediction changes
+  // Run checkPotentialTargets with throttling
   useEffect(() => {
     if (position && predictedPosition) {
-      // Use a timeout to debounce rapid position changes
-      // and prevent potential infinite loops in tests
-      const timeoutId = setTimeout(() => {
-        checkPotentialTargets();
-      }, 0);
+      const now = Date.now();
+      const timeSinceLastCheck = now - lastExecutionTimeRef.current;
       
-      return () => clearTimeout(timeoutId);
+      // Apply throttling - only check if enough time has passed
+      if (timeSinceLastCheck >= checkFrequency) {
+        lastExecutionTimeRef.current = now;
+        checkPotentialTargets();
+      }
     }
-  }, [position, predictedPosition, checkPotentialTargets]);
+  }, [position, predictedPosition, checkPotentialTargets, checkFrequency]);
   
   // Clean up old cache entries
   const cleanCache = useCallback(() => {
@@ -357,7 +446,7 @@ export const usePreloadOnPrediction = (options?: PreloadOptions): PreloadResult 
       // Start new interval for cache cleaning only
       checkIntervalRef.current = window.setInterval(() => {
         cleanCache();
-      }, checkFrequency);
+      }, checkFrequency * 10); // Less frequent than checks (every 10 check intervals)
       
       return () => {
         if (checkIntervalRef.current) {
@@ -379,6 +468,11 @@ export const usePreloadOnPrediction = (options?: PreloadOptions): PreloadResult 
       // Clear interval
       if (checkIntervalRef.current) {
         window.clearInterval(checkIntervalRef.current);
+      }
+      
+      // Disconnect observer
+      if (observerRef.current) {
+        observerRef.current.disconnect();
       }
     };
   }, []);
