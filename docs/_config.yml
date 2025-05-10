@@ -1,0 +1,30 @@
+title: "Flow"
+description: "React Cursor Prediction Library"
+baseurl: "/flow-prediction"
+url: "https://66HEX.github.io"
+
+theme: just-the-docs
+
+search_enabled: true
+heading_anchors: true
+permalink: pretty
+
+
+nav_external_links:
+  - title: NPM Package
+    url: https://www.npmjs.com/package/flow-prediction
+    hide_icon: false
+  - title: GitHub Repository
+    url: https://github.com/66HEX/flow-prediction
+    hide_icon: false
+
+search:
+  heading_level: 2
+  previews: 3
+  preview_words_before: 5
+  preview_words_after: 10
+  tokenizer_separator: /[\s/]+/
+  rel_url: true
+  button: false
+
+nav_sort: case_sensitive
