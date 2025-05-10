@@ -15,6 +15,14 @@ export interface PredictionDemoOptions {
   directionBias?: number;
   /** Measurement noise - how much to trust measurements */
   measurementNoise?: number;
+  /** Whether to use adaptive noise parameters */
+  useAdaptiveNoise?: boolean;
+  /** Maximum measurements to keep in history for adaptive noise */
+  maxHistorySize?: number;
+  /** Minimum process noise value */
+  minProcessNoise?: number;
+  /** Maximum process noise value */
+  maxProcessNoise?: number;
 }
 
 /**
@@ -33,6 +41,8 @@ export interface PredictionDemoProps {
   showTrail?: boolean;
   /** Maximum number of trail points to show */
   maxTrailLength?: number;
+  /** Whether to show current noise parameters */
+  showNoiseParams?: boolean;
   /** Custom CSS class name */
   className?: string;
 }
@@ -49,6 +59,7 @@ export const PredictionDemo: React.FC<PredictionDemoProps> = ({
   showParticles = true,
   showTrail = true,
   maxTrailLength = 20,
+  showNoiseParams = false,
   className = ''
 }) => {
   // Default configuration values
@@ -57,6 +68,10 @@ export const PredictionDemo: React.FC<PredictionDemoProps> = ({
   const processNoise = options.processNoise ?? 5;
   const directionBias = options.directionBias ?? 1.5;
   const measurementNoise = options.measurementNoise ?? 2;
+  const useAdaptiveNoise = options.useAdaptiveNoise ?? false;
+  const maxHistorySize = options.maxHistorySize ?? 10;
+  const minProcessNoise = options.minProcessNoise ?? 1;
+  const maxProcessNoise = options.maxProcessNoise ?? 15;
   
   // Reference for canvas drawing
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -66,15 +81,37 @@ export const PredictionDemo: React.FC<PredictionDemoProps> = ({
     position,
     predictedPosition, 
     history, 
-    getParticles
+    getParticles,
+    getNoiseParameters
   } = useCursorPredictor({
     predictionHorizon,
     numParticles,
     processNoise,
     directionBias,
     measurementNoise,
+    useAdaptiveNoise,
+    maxHistorySize,
+    minProcessNoise,
+    maxProcessNoise,
     sampleRate: 16 // ~60fps for smoother visualization
   });
+  
+  // For displaying current noise parameters
+  const [currentNoiseParams, setCurrentNoiseParams] = useState<{ processNoise: number, measurementNoise: number } | null>(null);
+  
+  // Update noise parameters display
+  useEffect(() => {
+    if (showNoiseParams) {
+      const intervalId = setInterval(() => {
+        const params = getNoiseParameters();
+        if (params) {
+          setCurrentNoiseParams(params);
+        }
+      }, 200); // Update every 200ms
+      
+      return () => clearInterval(intervalId);
+    }
+  }, [showNoiseParams, getNoiseParameters]);
   
   // Track canvas-relative cursor position
   const [canvasPosition, setCanvasPosition] = useState<{ x: number, y: number } | null>(null);
@@ -273,8 +310,16 @@ export const PredictionDemo: React.FC<PredictionDemoProps> = ({
       }}>
         <div>Prediction: {predictionHorizon}ms</div>
         <div>Particles: {numParticles}</div>
-        <div>Process noise: {processNoise}</div>
-        <div>Direction bias: {directionBias}</div>
+        {!useAdaptiveNoise && <div>Process noise: {processNoise.toFixed(1)}</div>}
+        <div>Direction bias: {directionBias.toFixed(1)}</div>
+        {useAdaptiveNoise && <div>Adaptive noise: ON</div>}
+        
+        {showNoiseParams && currentNoiseParams && (
+          <>
+            <div>Current process noise: {currentNoiseParams.processNoise.toFixed(2)}</div>
+            <div>Current measurement noise: {currentNoiseParams.measurementNoise.toFixed(2)}</div>
+          </>
+        )}
       </div>
     </div>
   );

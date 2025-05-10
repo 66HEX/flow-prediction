@@ -19,6 +19,14 @@ export interface CursorPredictorOptions {
   measurementNoise?: number;
   /** Direction bias for particle filter */
   directionBias?: number;
+  /** Whether to use adaptive noise parameters */
+  useAdaptiveNoise?: boolean;
+  /** Maximum measurements to keep in history for adaptive noise */
+  maxHistorySize?: number;
+  /** Minimum process noise value */
+  minProcessNoise?: number;
+  /** Maximum process noise value */
+  maxProcessNoise?: number;
 }
 
 /**
@@ -48,6 +56,8 @@ export interface CursorPredictorResult {
   stopTracking: () => void;
   /** Get the raw particles (for visualization) */
   getParticles: () => Array<{ x: number, y: number, weight: number }> | null;
+  /** Get current noise parameters */
+  getNoiseParameters: () => { processNoise: number, measurementNoise: number } | null;
   /** Reset the predictor */
   reset: () => void;
 }
@@ -60,9 +70,9 @@ export interface CursorPredictorResult {
  */
 export const useCursorPredictor = (options?: CursorPredictorOptions): CursorPredictorResult => {
   // Default values
-  const sampleRate = options?.sampleRate ?? 50; // Default to 50ms
+  const sampleRate = options?.sampleRate ?? 16; // Default to 16ms
   const maxHistoryLength = options?.maxHistoryLength ?? 20; // Default to 20 points
-  const predictionHorizon = options?.predictionHorizon ?? 500; // Default to 500ms ahead
+  const predictionHorizon = options?.predictionHorizon ?? 300; // Default to 300ms ahead
   
   // State for current position and history
   const [position, setPosition] = useState<CursorPosition | null>(null);
@@ -85,10 +95,23 @@ export const useCursorPredictor = (options?: CursorPredictorOptions): CursorPred
         numParticles: options?.numParticles ?? 100,
         processNoise: options?.processNoise ?? 5,
         measurementNoise: options?.measurementNoise ?? 2,
-        directionBias: options?.directionBias ?? 1.5
+        directionBias: options?.directionBias ?? 1.5,
+        useAdaptiveNoise: options?.useAdaptiveNoise ?? true,
+        maxHistorySize: options?.maxHistorySize ?? 10,
+        minProcessNoise: options?.minProcessNoise ?? 1,
+        maxProcessNoise: options?.maxProcessNoise ?? 15
       });
     }
-  }, [options?.numParticles, options?.processNoise, options?.measurementNoise, options?.directionBias]);
+  }, [
+    options?.numParticles, 
+    options?.processNoise, 
+    options?.measurementNoise, 
+    options?.directionBias,
+    options?.useAdaptiveNoise,
+    options?.maxHistorySize,
+    options?.minProcessNoise,
+    options?.maxProcessNoise
+  ]);
   
   // Update cursor position based on event
   const updateCursorPosition = useCallback((e: MouseEvent) => {
@@ -156,6 +179,12 @@ export const useCursorPredictor = (options?: CursorPredictorOptions): CursorPred
     return filterRef.current.getParticles();
   }, []);
   
+  // Get current noise parameters
+  const getNoiseParameters = useCallback(() => {
+    if (!filterRef.current) return null;
+    return filterRef.current.getNoiseParameters();
+  }, []);
+  
   // Set up and clean up event listeners
   useEffect(() => {
     if (isTracking) {
@@ -185,6 +214,7 @@ export const useCursorPredictor = (options?: CursorPredictorOptions): CursorPred
     startTracking,
     stopTracking,
     getParticles,
+    getNoiseParameters,
     reset
   };
 }; 

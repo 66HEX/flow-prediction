@@ -19,6 +19,14 @@ export interface ParticleFilterOptions {
   resampleThreshold?: number;
   /** How strongly to bias toward the current direction of movement */
   directionBias?: number;
+  /** Whether to use adaptive noise parameters */
+  useAdaptiveNoise?: boolean;
+  /** Maximum measurements to keep in history for adaptive noise */
+  maxHistorySize?: number;
+  /** Minimum process noise value */
+  minProcessNoise?: number;
+  /** Maximum process noise value */
+  maxProcessNoise?: number;
 }
 
 /**
@@ -64,6 +72,15 @@ export class ParticleFilter {
   // For testing purposes - exact state override
   private exactStateOverride: { x: number, y: number, vx: number, vy: number } | null = null;
 
+  // Adaptive noise parameters
+  private useAdaptiveNoise: boolean;
+  private measurementHistory: Array<{ x: number, y: number, timestamp: number }> = [];
+  private maxHistorySize: number;
+  private minProcessNoise: number;
+  private maxProcessNoise: number;
+  private baseProcessNoise: number;
+  private baseMeasurementNoise: number;
+
   /**
    * Creates a new instance of ParticleFilter
    * @param options Configuration options
@@ -75,6 +92,14 @@ export class ParticleFilter {
     this.measurementNoise = options?.measurementNoise ?? 2;
     this.resampleThreshold = options?.resampleThreshold ?? 0.5;
     this.directionBias = options?.directionBias ?? 1.5;
+    
+    // Adaptive noise parameters
+    this.useAdaptiveNoise = options?.useAdaptiveNoise ?? false;
+    this.maxHistorySize = options?.maxHistorySize ?? 10;
+    this.minProcessNoise = options?.minProcessNoise ?? 1;
+    this.maxProcessNoise = options?.maxProcessNoise ?? 15;
+    this.baseProcessNoise = this.processNoise;
+    this.baseMeasurementNoise = this.measurementNoise;
     
     // Initialize particle collection
     this.particles = [];
@@ -173,7 +198,21 @@ export class ParticleFilter {
       this.initializeParticles(this.exactStateOverride);
       this.lastTimestamp = currentTime;
       this.lastMeasurement = { x: measurement.x, y: measurement.y };
+      
+      // Initialize measurement history
+      this.measurementHistory = [{ ...measurement, timestamp: currentTime }];
       return;
+    }
+    
+    // Update measurement history for adaptive noise calculation
+    if (this.useAdaptiveNoise) {
+      this.measurementHistory.push({ ...measurement, timestamp: currentTime });
+      if (this.measurementHistory.length > this.maxHistorySize) {
+        this.measurementHistory.shift();
+      }
+      
+      // Adapt noise parameters based on history
+      this.adaptNoiseParameters();
     }
     
     // Calculate time difference in seconds
@@ -265,6 +304,63 @@ export class ParticleFilter {
     
     // Update last measurement
     this.lastMeasurement = { x: measurement.x, y: measurement.y };
+  }
+
+  /**
+   * Adapt noise parameters based on measurement history
+   */
+  private adaptNoiseParameters(): void {
+    if (this.measurementHistory.length < 3) {
+      return; // Need at least a few measurements to adapt
+    }
+
+    // Calculate velocity variance
+    const velocities: Array<{ vx: number, vy: number }> = [];
+    for (let i = 1; i < this.measurementHistory.length; i++) {
+      const prev = this.measurementHistory[i - 1];
+      const curr = this.measurementHistory[i];
+      const dt = (curr.timestamp - prev.timestamp) / 1000;
+      
+      if (dt > 0.001) {
+        velocities.push({
+          vx: (curr.x - prev.x) / dt,
+          vy: (curr.y - prev.y) / dt
+        });
+      }
+    }
+
+    if (velocities.length < 2) {
+      return; // Need at least two velocity measurements
+    }
+
+    // Calculate mean velocity
+    const meanVx = velocities.reduce((sum, v) => sum + v.vx, 0) / velocities.length;
+    const meanVy = velocities.reduce((sum, v) => sum + v.vy, 0) / velocities.length;
+
+    // Calculate velocity variance
+    const varVx = velocities.reduce((sum, v) => sum + Math.pow(v.vx - meanVx, 2), 0) / velocities.length;
+    const varVy = velocities.reduce((sum, v) => sum + Math.pow(v.vy - meanVy, 2), 0) / velocities.length;
+    const totalVarV = Math.sqrt(varVx + varVy);
+
+    // Calculate position variance for measurement noise
+    const meanX = this.measurementHistory.reduce((sum, m) => sum + m.x, 0) / this.measurementHistory.length;
+    const meanY = this.measurementHistory.reduce((sum, m) => sum + m.y, 0) / this.measurementHistory.length;
+    const varX = this.measurementHistory.reduce((sum, m) => sum + Math.pow(m.x - meanX, 2), 0) / this.measurementHistory.length;
+    const varY = this.measurementHistory.reduce((sum, m) => sum + Math.pow(m.y - meanY, 2), 0) / this.measurementHistory.length;
+    const totalVarPos = Math.sqrt(varX + varY);
+
+    // Adapt process noise based on velocity variance
+    // Higher variance means less predictable movement, so increase process noise
+    const varianceRatio = Math.min(Math.max(totalVarV / 100, 0.2), 3);
+    this.processNoise = Math.min(
+      Math.max(this.baseProcessNoise * varianceRatio, this.minProcessNoise),
+      this.maxProcessNoise
+    );
+
+    // Adapt measurement noise based on position variance
+    // Higher variance means less reliable measurements, so increase measurement noise
+    const posVarianceRatio = Math.min(Math.max(totalVarPos / 50, 0.5), 2);
+    this.measurementNoise = this.baseMeasurementNoise * posVarianceRatio;
   }
 
   /**
@@ -529,13 +625,12 @@ export class ParticleFilter {
   getState(): { x: number, y: number, vx: number, vy: number } {
     // For test purposes, return the exact state
     if (this.exactStateOverride) {
-      // We reduce the value of vy, to pass the test "should handle noise in measurements"
       if (Math.abs(this.exactStateOverride.vx) > 100 && Math.abs(this.exactStateOverride.vy) > 20) {
         return {
           x: this.exactStateOverride.x,
           y: this.exactStateOverride.y,
           vx: this.exactStateOverride.vx,
-          vy: this.exactStateOverride.vy * 0.25 // We reduce the value of vy, to pass the test
+          vy: this.exactStateOverride.vy 
         };
       }
       return { ...this.exactStateOverride };
@@ -571,12 +666,28 @@ export class ParticleFilter {
   }
 
   /**
+   * Get the current adaptive noise parameters
+   * @returns Current noise parameters
+   */
+  getNoiseParameters(): { processNoise: number, measurementNoise: number } {
+    return {
+      processNoise: this.processNoise,
+      measurementNoise: this.measurementNoise
+    };
+  }
+
+  /**
    * Resets the filter to the given state or to default values
    * @param state Optional state to reset to
    */
   reset(state?: { x: number, y: number, vx?: number, vy?: number }): void {
     this.lastTimestamp = null;
     this.lastMeasurement = null;
+    this.measurementHistory = [];
+    
+    // Reset noise parameters to base values
+    this.processNoise = this.baseProcessNoise;
+    this.measurementNoise = this.baseMeasurementNoise;
     
     if (state) {
       // Set exact state for tests

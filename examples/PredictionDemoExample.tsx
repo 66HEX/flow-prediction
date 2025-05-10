@@ -12,6 +12,11 @@ const PredictionDemoExample: React.FC = () => {
   const [directionBias, setDirectionBias] = useState(1.5);
   const [showParticles, setShowParticles] = useState(true);
   const [showTrail, setShowTrail] = useState(true);
+  const [useAdaptiveNoise, setUseAdaptiveNoise] = useState(true);
+  const [maxHistorySize, setMaxHistorySize] = useState(10);
+  const [minProcessNoise, setMinProcessNoise] = useState(1);
+  const [maxProcessNoise, setMaxProcessNoise] = useState(15);
+  const [showNoiseParams, setShowNoiseParams] = useState(false);
   
   return (
     <div style={{ padding: '20px' }}>
@@ -79,6 +84,7 @@ const PredictionDemoExample: React.FC = () => {
                 value={processNoise}
                 onChange={(e) => setProcessNoise(Number(e.target.value))}
                 style={{ width: '100%' }}
+                disabled={useAdaptiveNoise}
               />
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span>1</span>
@@ -104,6 +110,95 @@ const PredictionDemoExample: React.FC = () => {
                 <span>0.5</span>
                 <span>{directionBias}</span>
                 <span>3.0</span>
+              </div>
+            </label>
+          </div>
+        </div>
+        
+        <h3 style={{ marginTop: '20px' }}>Adaptive Noise Settings</h3>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px', maxWidth: '800px' }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: '5px' }}>
+              <input 
+                type="checkbox" 
+                checked={useAdaptiveNoise} 
+                onChange={() => setUseAdaptiveNoise(!useAdaptiveNoise)} 
+              />
+              Use Adaptive Noise
+            </label>
+          </div>
+          
+          <div>
+            <label style={{ display: 'block', marginBottom: '5px' }}>
+              <input 
+                type="checkbox" 
+                checked={showNoiseParams} 
+                onChange={() => setShowNoiseParams(!showNoiseParams)} 
+              />
+              Show Current Noise Parameters
+            </label>
+          </div>
+          
+          <div>
+            <label style={{ display: 'block', marginBottom: '5px' }}>
+              Max History Size:
+              <input 
+                type="range" 
+                min="5" 
+                max="30" 
+                step="1" 
+                value={maxHistorySize}
+                onChange={(e) => setMaxHistorySize(Number(e.target.value))}
+                style={{ width: '100%' }}
+                disabled={!useAdaptiveNoise}
+              />
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>5</span>
+                <span>{maxHistorySize}</span>
+                <span>30</span>
+              </div>
+            </label>
+          </div>
+          
+          <div>
+            <label style={{ display: 'block', marginBottom: '5px' }}>
+              Min Process Noise:
+              <input 
+                type="range" 
+                min="0.5" 
+                max="5" 
+                step="0.5" 
+                value={minProcessNoise}
+                onChange={(e) => setMinProcessNoise(Number(e.target.value))}
+                style={{ width: '100%' }}
+                disabled={!useAdaptiveNoise}
+              />
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>0.5</span>
+                <span>{minProcessNoise}</span>
+                <span>5</span>
+              </div>
+            </label>
+          </div>
+          
+          <div>
+            <label style={{ display: 'block', marginBottom: '5px' }}>
+              Max Process Noise:
+              <input 
+                type="range" 
+                min="10" 
+                max="30" 
+                step="1" 
+                value={maxProcessNoise}
+                onChange={(e) => setMaxProcessNoise(Number(e.target.value))}
+                style={{ width: '100%' }}
+                disabled={!useAdaptiveNoise}
+              />
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>10</span>
+                <span>{maxProcessNoise}</span>
+                <span>30</span>
               </div>
             </label>
           </div>
@@ -140,10 +235,15 @@ const PredictionDemoExample: React.FC = () => {
             numParticles,
             predictionHorizon,
             processNoise,
-            directionBias
+            directionBias,
+            useAdaptiveNoise,
+            maxHistorySize,
+            minProcessNoise,
+            maxProcessNoise
           }}
           showParticles={showParticles}
           showTrail={showTrail}
+          showNoiseParams={showNoiseParams}
           className="prediction-demo"
         />
       </div>
@@ -165,11 +265,23 @@ const PredictionDemoExample: React.FC = () => {
           <div><strong>Direction Bias</strong></div>
           <div>How strongly the prediction favors the current direction of movement.</div>
           
+          <div><strong>Use Adaptive Noise</strong></div>
+          <div>Automatically adjusts noise parameters based on cursor movement patterns.</div>
+          
+          <div><strong>Max History Size</strong></div>
+          <div>Number of measurements to keep for calculating adaptive noise parameters.</div>
+          
+          <div><strong>Min/Max Process Noise</strong></div>
+          <div>Boundaries for the adaptive process noise values.</div>
+          
           <div><strong>Show Particles</strong></div>
           <div>Displays the individual particles used in the prediction algorithm.</div>
           
           <div><strong>Show Cursor Trail</strong></div>
           <div>Displays the recent history of cursor positions.</div>
+          
+          <div><strong>Show Noise Parameters</strong></div>
+          <div>Displays the current noise parameters calculated by the adaptive algorithm.</div>
         </div>
       </div>
       
@@ -193,6 +305,17 @@ const PredictionDemoExample: React.FC = () => {
           This approach performs better than simple linear prediction, especially for non-linear movements
           and sudden changes in direction.
         </p>
+        
+        <p>
+          <strong>Adaptive Noise</strong>: The filter can automatically adjust its noise parameters based on the 
+          observed cursor movement patterns. This allows it to:
+        </p>
+        
+        <ul>
+          <li>Increase process noise during erratic movements for faster adaptation</li>
+          <li>Decrease process noise during smooth movements for more stable predictions</li>
+          <li>Adjust measurement noise based on the statistical properties of recent observations</li>
+        </ul>
       </div>
     </div>
   );

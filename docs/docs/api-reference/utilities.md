@@ -48,7 +48,7 @@ const particles = filter.getParticles();
 ```
 
 
-## `Quadtree`
+## Quadtree
 
 Spatial indexing data structure for efficient element intersection detection.
 
