@@ -55,7 +55,7 @@ On mobile devices, consider:
 2. Reducing `numParticles` significantly 
 3. Increasing `processNoise` to make predictions more responsive to touch movements
 
-```tsx
+{% raw %}```tsx
 const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
 
 <PreloadProvider options={{
@@ -63,4 +63,4 @@ const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
   processNoise: isMobile ? 10 : 5,
   sampleRate: isMobile ? 100 : 50
 }}>
-```
+```{% endraw %}

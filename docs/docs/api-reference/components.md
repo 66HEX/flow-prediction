@@ -59,7 +59,7 @@ Visualization component for debugging and demonstration.
 
 Provider that creates a preloading context for the application.
 
-```tsx
+{% raw %}```tsx
 <PreloadProvider options={{
   predictionHorizon: 500,
   numParticles: 100,
@@ -69,4 +69,4 @@ Provider that creates a preloading context for the application.
 }}>
   <App />
 </PreloadProvider>
-```
+```{% endraw %}

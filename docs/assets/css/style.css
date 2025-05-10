@@ -5,13 +5,13 @@ pre.highlight {
   background: #18191B;
   color: #EDEEF0;
   border-radius: 1rem;
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .highlight pre {
   background: #18191B;
   border-radius: 1rem;
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .highlight .hll {
@@ -735,7 +735,7 @@ blockquote {
 
 @media (min-width: 50rem) {
   .side-bar + .main {
-    margin-left: 24rem;
+    margin-left: 15.5rem;
   }
 }
 .side-bar + .main .main-header {
@@ -928,6 +928,13 @@ body {
   line-height: 1.6;
   max-width: 800px;
 }
+
+@media (min-width: 50rem) {
+  .main-content {
+    margin-left: 6rem;
+  }
+}
+
 .main-content ol,
 .main-content ul,
 .main-content dl,
@@ -2231,13 +2238,13 @@ pre.highlight {
   background: #18191B;
   color: #EDEEF0;
   border-radius: 1rem;
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .highlight pre {
   background: #18191B;
   border-radius: 1rem;
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .text-grey-dk-000 {
